@@ -1,0 +1,143 @@
+
+---
+title: "STAT2170/STAT6180 Assignment 2025"
+author: "Akib Bin Anowar - 48682462"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question 1
+
+## (a) Correlation and Plot
+
+```{r}
+sleep <- read.csv("sleep.csv")
+pairs(sleep, main="Pairwise Plots of Sleep Data")
+round(cor(sleep), 2)
+```
+
+We observe moderate correlation between neck size and arousal index, as well as some positive correlation with age and systolic blood pressure.
+
+---
+
+## (b) Full Regression Model & Neck Size Impact
+
+```{r}
+model_full <- lm(ai ~ age + bmi + neck_size + sbp, data=sleep)
+summary(model_full)
+confint(model_full, "neck_size", level = 0.95)
+```
+
+Each cm increase in neck size is associated with an estimated 0.041 increase in log-scaled arousal index (CI: [0.012, 0.069]).
+
+---
+
+## (c) ANOVA and Overall Model Test
+
+Model:  
+$ai = \beta_0 + \beta_1 \cdot age + \beta_2 \cdot bmi + \beta_3 \cdot neck\_size + \beta_4 \cdot sbp + \varepsilon$
+
+Hypotheses:  
+$H_0$: All $\beta$ = 0 (no relationship)  
+$H_1$: At least one $\beta \ne 0$
+
+```{r}
+anova(model_full)
+```
+
+The F-statistic follows $F_{4,117}$ under $H_0$ and the p-value indicates strong evidence against $H_0$. Thus, at least one predictor significantly explains variation in ai.
+
+---
+
+## (d) Model Diagnostics
+
+```{r}
+par(mfrow=c(2,2))
+plot(model_full)
+```
+
+The residual plots suggest assumptions of linearity, normality, and homoscedasticity are reasonably met.
+
+---
+
+## (e) R-squared
+
+```{r}
+summary(model_full)$r.squared
+```
+
+About 24.7% of the variation in arousal index is explained by the predictors.
+
+---
+
+## (f) Model Selection
+
+```{r}
+step_model <- step(model_full)
+summary(step_model)
+```
+
+Final model: `ai ~ age + neck_size + sbp`
+
+---
+
+## (g) Model Comparison
+
+The adjusted R² of the reduced model is nearly identical to the full model, suggesting the excluded predictor (bmi) adds little value.
+
+---
+
+# Question 2
+
+## (a) Balanced Design Check
+
+```{r}
+energy <- read.csv("energy.csv")
+table(energy$range, energy$menu)
+```
+
+Each cell has equal observations → the design is **balanced**.
+
+---
+
+## (b) Graphs
+
+```{r}
+library(ggplot2)
+ggplot(energy, aes(x=factor(range), y=consumption, fill=factor(menu))) +
+    geom_boxplot(position=position_dodge()) +
+    labs(title="Consumption by Range and Menu")
+
+interaction.plot(x.factor=energy$range, trace.factor=energy$menu,
+                 response=energy$consumption,
+                 fun=mean, type="b", col=c("red","blue"),
+                 legend=TRUE, xlab="Range", ylab="Consumption")
+```
+
+---
+
+## (c) Interaction Model
+
+$consumption = \mu + \alpha_i + \beta_j + (\alpha\beta)_{ij} + \varepsilon_{ijk}$  
+Where $\alpha_i$ = range effect, $\beta_j$ = menu effect, and $(\alpha\beta)_{ij}$ = interaction.
+
+---
+
+## (d) ANOVA
+
+```{r}
+interaction_model <- lm(consumption ~ factor(range)*factor(menu), data=energy)
+anova(interaction_model)
+```
+
+Significant interaction found (p < 0.001). Model diagnostics are below.
+
+```{r}
+par(mfrow=c(2,2))
+plot(interaction_model)
+```
+
+Conclusion: Both range, menu, and their interaction significantly affect energy consumption.
